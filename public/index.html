@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0b0a0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Menel: Pobiedziska</title>
+<style>
+:root{
+  --bg:#0b0a0d; --panel:#15131a; --panel2:#1d1a23; --line:#2c2833;
+  --txt:#d9d2c5; --dim:#857d73; --sodium:#e8a33d; --sodium2:#ffcf7a;
+  --blood:#b3402e; --green:#7fae5a; --glass:#6fae8f; --plastic:#7aa6d6;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+  font-family:"Courier New",ui-monospace,Menlo,monospace;overflow:hidden}
+button{font:inherit;color:inherit}
+#app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+/* HUD */
+#hud{display:flex;gap:14px;align-items:center;padding:6px 12px;background:#000a;border-bottom:1px solid var(--line);font-size:14px;white-space:nowrap;overflow:hidden}
+#hud .clock{font-size:20px;color:var(--sodium2);font-weight:bold;letter-spacing:1px}
+#hud .st{display:flex;align-items:center;gap:5px}
+.bar{width:70px;height:8px;background:#000;border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:var(--green);transition:width .3s}
+#hud .sp{flex:1}
+#hud .day{color:var(--dim);font-size:12px}
+/* main */
+#main{display:grid;grid-template-columns:1.25fr 1fr;min-height:0}
+#scene{position:relative;overflow:hidden;border-right:1px solid var(--line)}
+#sky{position:absolute;inset:0;transition:background 1s}
+#scene svg.city{position:absolute;left:0;right:0;bottom:0;width:100%;height:70%}
+#grain{position:absolute;inset:0;pointer-events:none;opacity:.18;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence baseFrequency='.9' numOctaves='2'/></filter><rect width='120' height='120' filter='url(%23n)'/></svg>")}
+#vign{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 60%,transparent 40%,#000c 100%)}
+#locname{position:absolute;left:12px;top:10px;right:12px}
+#locname h1{margin:0;font-size:22px;color:var(--sodium2);text-shadow:0 0 12px #e8a33d66}
+#locname p{margin:3px 0 0;font-size:12.5px;color:var(--txt);opacity:.85;max-width:95%;line-height:1.35}
+#tag{display:inline-block;font-size:10px;padding:1px 5px;border:1px solid var(--dim);color:var(--dim);margin-top:4px}
+#log{position:absolute;left:10px;right:10px;bottom:10px;max-height:38%;overflow:hidden;
+  display:flex;flex-direction:column-reverse;gap:3px;font-size:12.5px}
+#log div{background:#000b;padding:4px 7px;border-left:2px solid var(--sodium);line-height:1.3}
+#log div.bad{border-color:var(--blood)} #log div.good{border-color:var(--green)}
+#log div:nth-child(n+3){opacity:.55} #log div:nth-child(n+4){display:none}
+/* side */
+#side{display:flex;flex-direction:column;min-height:0;background:var(--panel)}
+#actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px}
+.btn{background:var(--panel2);border:1px solid var(--line);padding:9px 8px;text-align:left;cursor:pointer;min-height:46px;border-radius:3px}
+.btn:active{transform:translateY(1px);background:#2a2530}
+.btn b{display:block;font-size:14px;color:var(--sodium2)}
+.btn small{color:var(--dim);font-size:11px}
+.btn[disabled]{opacity:.35;pointer-events:none}
+.btn.wide{grid-column:span 2}
+#bag{padding:4px 10px 8px;font-size:13px;color:var(--dim);border-top:1px solid var(--line)}
+#bag .row{display:flex;justify-content:space-between;margin-top:3px}
+#bag .p{color:var(--plastic)} #bag .g{color:var(--glass)}
+/* map */
+#map{position:fixed;inset:0;background:#07060aee;display:none;z-index:5}
+#map.on{display:block}
+#map svg{width:100%;height:100%}
+#map .close{position:absolute;right:10px;top:10px;z-index:2;background:var(--panel2);border:1px solid var(--line);padding:8px 14px;cursor:pointer}
+#map .hint{position:absolute;left:12px;top:12px;font-size:12px;color:var(--dim);max-width:55%}
+.node{cursor:pointer}
+.node circle{fill:#1d1a23;stroke:var(--sodium);stroke-width:2}
+.node.here circle{fill:var(--sodium)}
+.node.closed circle{stroke:#555}
+.node text{fill:var(--txt);font-size:13px;font-family:inherit}
+.node text.cost{fill:var(--sodium2);font-size:11px}
+/* overlays */
+.ov{position:fixed;inset:0;background:#000e;z-index:9;display:none;align-items:center;justify-content:center;text-align:center;padding:20px}
+.ov.on{display:flex}
+.ov .box{max-width:560px}
+.ov h2{color:var(--sodium2);margin:0 0 8px;font-size:28px;letter-spacing:2px}
+.ov p{color:var(--txt);line-height:1.45;font-size:14px;margin:6px 0}
+.ov .big{font-size:34px;color:var(--sodium2)}
+.ov .btn{display:inline-block;text-align:center;margin-top:12px;padding:12px 26px}
+#rotate{z-index:20}
+@media (orientation:portrait){ #rotate{display:flex} }
+@media (max-height:360px){ #locname p{font-size:11.5px} .btn{padding:6px 7px;min-height:40px} .btn b{font-size:13px} }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <span class="clock" id="clock">07:00</span>
+    <span class="day" id="day">wtorek, listopad</span>
+    <span class="st">💰 <b id="cash">0,00 zł</b></span>
+    <span class="st">Siły <span class="bar"><i id="hp"></i></span></span>
+    <span class="sp"></span>
+    <span class="st" style="color:var(--dim)">rekord: <b id="best">0,00 zł</b></span>
+  </div>
+  <div id="main">
+    <div id="scene">
+      <div id="sky"></div>
+      <svg class="city" id="city" viewBox="0 0 600 260" preserveAspectRatio="xMidYMax slice"></svg>
+      <div id="vign"></div><div id="grain"></div>
+      <div id="locname"><h1 id="lname"></h1><p id="ldesc"></p><span id="tag"></span></div>
+      <div id="log"></div>
+    </div>
+    <div id="side">
+      <div id="actions"></div>
+      <div id="bag"></div>
+    </div>
+  </div>
+</div>
+
+<div id="map"><div class="hint">Mapa schematyczna, nie w skali. Czas dojścia liczony od miejsca, w którym stoisz.</div>
+  <button class="close" onclick="toggleMap(false)">✕ Zamknij</button>
+  <svg id="mapsvg" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet"></svg></div>
+
+<div class="ov on" id="intro"><div class="box">
+  <h2>MENEL</h2>
+  <p>Budzisz się na ławce w Pobiedziskach. Jest 7:00, zimno, w głowie dudni.</p>
+  <p>Do północy musisz uzbierać jak najwięcej kasy z butelek z kaucją:<br>
+  <span style="color:var(--plastic)">plastik 0,50 zł</span> · <span style="color:var(--glass)">szkło po piwie 1,00 zł</span>.</p>
+  <p style="color:var(--dim);font-size:12.5px">Każde przejście i przeszukanie zjada czas i siły. Butelki oddajesz w sklepie, zanim go zamkną. Co zostanie w torbie o północy, przepada.</p>
+  <button class="btn" onclick="startGame()"><b>Wstań z ławki</b></button>
+</div></div>
+
+<div class="ov" id="end"><div class="box">
+  <h2 id="endtitle">PÓŁNOC</h2>
+  <p id="endtxt"></p>
+  <p class="big" id="endcash"></p>
+  <p id="endstats" style="color:var(--dim);font-size:13px"></p>
+  <button class="btn" onclick="startGame()"><b>Jeszcze jeden dzień</b></button>
+</div></div>
+
+<div class="ov" id="rotate"><div class="box"><h2>↻</h2><p>Obróć telefon poziomo.</p></div></div>
+
+<script>
+/* ===== LOKACJE =====
+   real:true  = miejsce potwierdzone w źródłach (Wikipedia, poznan.pl, komoot)
+   real:false = fikcyjne/zgadywane na potrzeby gry
+   x,y = pozycja na mapie SCHEMATYCZNEJ (nie geograficznej) */
+const LOCS = [
+ {id:'lawka', name:'Ławka pod blokiem', real:false, x:330,y:250,
+  desc:'Twoja miejscówka. Wiata, kosz, sąsiad z trzeciego piętra pije na balkonie.',
+  p:1, g:1, peak:[20,24], sleep:true},
+ {id:'rynek', name:'Rynek', real:true, x:400,y:190,
+  desc:'Kolorowe kamienice, fontanna Lecha, Czecha i Rusa, pomnik Powstania Wielkopolskiego. Ławki pełne wieczorem.',
+  p:3, g:2.5, peak:[17,23]},
+ {id:'michal', name:'Kościół św. Michała Archanioła', real:true, x:450,y:140,
+  desc:'Gotycki kościół przy Rynku. Po mszy ludzie zostawiają butelki z wodą. Proboszcz patrzy krzywo.',
+  p:1.5, g:.2, peak:[7,10]},
+ {id:'kazimierz', name:'Pomnik Kazimierza Odnowiciela', real:true, x:520,y:200,
+  desc:'Król patrzy z góry na to, co zostało po nocy.',
+  p:1, g:1.2, peak:[0,7]},
+ {id:'duch', name:'Kościół Ducha Świętego', real:true, x:300,y:120,
+  desc:'Klasycystyczny kościół z fundacji Jagiełły. Spokojnie, krzaki za murem pamiętają niejedno.',
+  p:.8, g:1, peak:[18,24]},
+ {id:'pkp', name:'Dworzec PKP Pobiedziska', real:true, x:230,y:200,
+  desc:'Pociągi do Poznania i Gniezna. Rano ludzie wyrzucają napoje, wieczorem pod wiatą stoi szkło.',
+  p:3.5, g:1.5, peak:[6,9]},
+ {id:'okis', name:'Ośrodek Kultury i Sportu', real:true, x:540,y:290,
+  desc:'ul. Kostrzyńska 21. Po treningach i imprezach plastik w koszach.',
+  p:2.5, g:.6, peak:[15,20]},
+ {id:'sklep', name:'Sklep z punktem zwrotu', real:false, x:420,y:300,
+  desc:'Automat do butelek i znudzona kasjerka. Tu zamieniasz szkło i plastik na kasę.',
+  p:.8, g:.5, peak:[10,14], shop:true, open:[6,22]},
+ {id:'dobre', name:'Jezioro Dobre', real:true, x:640,y:120,
+  desc:'Łowisko karpiowe, stanowiska wędkarskie. Wędkarze piją od świtu i zostawiają szkło w trzcinach.',
+  p:.8, g:3.5, peak:[5,11]},
+ {id:'biezdruchowo', name:'Jezioro Biezdruchowo', real:true, x:120,y:90,
+  desc:'Plaża ze żwirem, wypożyczalnia kajaków, wyciąg wakeboardowy. W listopadzie pusto, ale po sezonie zostało sporo szkła.',
+  p:1, g:3, peak:[12,18]},
+ {id:'letnisko', name:'Przystanek Pobiedziska Letnisko', real:true, x:90,y:300,
+  desc:'Druga stacja w mieście. Cicho, pusto, nikt tu nie sprząta.',
+  p:1.5, g:2, peak:[19,24]},
+ {id:'skansen', name:'Skansen Miniatur', real:true, x:730,y:330, far:true,
+  desc:'Miniatury zabytków Wielkopolski w skali 1:20, ok. 5 km od miasta przy trasie na Gniezno. Turyści i ich butelki.',
+  p:4, g:.8, peak:[11,17], open:[8,20]},
+];
+const L = Object.fromEntries(LOCS.map(l=>[l.id,l]));
+
+/* ===== STAN ===== */
+let S;
+const PLASTIC=0.5, GLASS=1.0, SEARCH_MIN=20, END=24*60;
+function newState(){
+  const pools={};
+  LOCS.forEach(l=>pools[l.id]={p:Math.round(l.p+rnd(0,2)), g:Math.round(l.g+rnd(0,2)), searched:0});
+  return {t:7*60, at:'lawka', cash:0, hp:80, bagP:0, bagG:0, cap:15, pools,
+    totalP:0,totalG:0, searches:0, walked:0, over:false, log:[]};
+}
+function rnd(a,b){return a+Math.random()*(b-a)}
+function ri(a,b){return Math.floor(rnd(a,b+1))}
+function fmt(m){m=Math.min(m,END);const h=Math.floor(m/60)%24,mm=m%60;return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0')}
+function zl(v){return v.toFixed(2).replace('.',',')+' zł'}
+function hourMod(l,h){const [a,b]=l.peak; return (h>=a&&h<b)?2.2:1}
+function isOpen(l,t){if(!l.open)return true;const h=t/60;return h>=l.open[0]&&h<l.open[1]}
+
+/* pule rosną z upływem czasu */
+function passTime(min){
+  const steps=Math.round(min/10);
+  for(let i=0;i<steps;i++){
+    S.t+=10;
+    S.hp-= (S.t/60>=21?1.0:0.6);
+    const h=Math.floor(S.t/60);
+    LOCS.forEach(l=>{
+      const pl=S.pools[l.id], m=hourMod(l,h);
+      if(Math.random()<0.06*l.p*m) pl.p++;
+      if(Math.random()<0.05*l.g*m) pl.g++;
+      pl.searched=Math.max(0,pl.searched-0.04);
+      pl.p=Math.min(pl.p,14); pl.g=Math.min(pl.g,14);
+    });
+    if(S.hp<=0){faint();return}
+    if(S.t>=END){endGame();return}
+  }
+}
+function travelMin(a,b){
+  if(a===b)return 0;
+  const A=L[a],B=L[b];
+  if(A.far||B.far) return 60;
+  const d=Math.hypot(A.x-B.x,A.y-B.y);
+  return Math.max(10,Math.round(d/8/5)*5);
+}
+
+/* ===== AKCJE ===== */
+function go(id){
+  if(S.over)return;
+  const m=travelMin(S.at,id);
+  toggleMap(false);
+  log(`Idziesz: ${L[id].name} (${m} min).`);
+  S.hp-=m/15; S.walked+=m;
+  S.at=id;
+  passTime(m);
+  if(S.over)return;
+  if(Math.random()<0.12) travelEvent();
+  render();
+}
+function search(){
+  const l=L[S.at], pl=S.pools[l.id];
+  passTime(SEARCH_MIN); if(S.over)return;
+  S.searches++; S.hp-=2;
+  const luck=Math.max(0.15, 0.85-pl.searched*0.3);
+  let fp=0,fg=0;
+  for(let i=0;i<pl.p;i++) if(Math.random()<luck) fp++;
+  for(let i=0;i<pl.g;i++) if(Math.random()<luck) fg++;
+  const room=S.cap-S.bagP-S.bagG;
+  let lost=0;
+  if(fp+fg>room){ lost=fp+fg-room; const k=room/(fp+fg); const keepG=Math.min(fg,Math.ceil(fg*k)); fg=keepG; fp=Math.max(0,room-fg); }
+  pl.p-=fp; pl.g-=fg; pl.searched++;
+  S.bagP+=fp; S.bagG+=fg;
+  if(fp+fg===0) log(pick(['Nic. Ktoś był tu przed tobą.','Same kapsle i pety.','Pusto. Tylko kot patrzy z pogardą.']),'bad');
+  else log(`Znalazłeś: ${fp?fp+'× plastik ':''}${fg?fg+'× szkło':''}.${lost?` Nie zmieściłeś ${lost} szt., torba pełna.`:''}`,'good');
+  if(Math.random()<0.18) searchEvent();
+  render();
+}
+function cashIn(){
+  const l=L[S.at];
+  if(!isOpen(l,S.t)){log('Zamknięte. Kraty opuszczone.','bad');return}
+  const n=S.bagP+S.bagG; if(!n){log('Kasjerka: „A butelki to gdzie?”','bad');return}
+  passTime(Math.max(5,Math.ceil(n/5)*5)); if(S.over)return;
+  const v=S.bagP*PLASTIC+S.bagG*GLASS;
+  S.cash+=v; S.totalP+=S.bagP; S.totalG+=S.bagG;
+  log(`Automat połknął ${S.bagP} plastik i ${S.bagG} szkło. +${zl(v)}`,'good');
+  S.bagP=0;S.bagG=0; render();
+}
+function buy(item){
+  const l=L[S.at]; if(!isOpen(l,S.t)){log('Zamknięte.','bad');return}
+  if(item==='bulka'){ if(S.cash<2)return log('Brakuje na bułkę.','bad'); S.cash-=2; S.hp=Math.min(100,S.hp+20); passTime(5); log('Bułka z pasztetem. Lepiej. +20 sił','good'); }
+  if(item==='torba'){ if(S.cash<4)return log('Brakuje na torbę.','bad'); S.cash-=4; S.cap+=10; S.bought=true; passTime(5); log('Kupujesz mocną torbę. Pojemność +10.','good'); }
+  if(item==='piwo'){ if(S.cash<4)return log('Brakuje.','bad'); S.cash-=4; S.hp=Math.min(100,S.hp+35); S.bagG++; passTime(15); log('Piwo na ławce przed sklepem. +35 sił i jedna butelka więcej do zwrotu.','good'); }
+  render();
+}
+function rest(){
+  passTime(60); if(S.over)return;
+  S.hp=Math.min(100,S.hp+ (L[S.at].sleep?30:15));
+  log(L[S.at].sleep?'Godzina drzemki na swojej ławce. +30 sił':'Siedzisz godzinę na krawężniku. +15 sił');
+  render();
+}
+function faint(){
+  log('Ciemność. Odpływasz na chodniku...','bad');
+  const stolen=Math.ceil((S.bagP+S.bagG)/2);
+  S.hp=35; S.t+=120;
+  let s=stolen; while(s>0&&(S.bagP||S.bagG)){ if(S.bagG){S.bagG--}else{S.bagP--} s--; }
+  log(`Budzisz się 2 godziny później. Ktoś podprowadził ${stolen} butelek.`,'bad');
+  if(S.t>=END){endGame();return}
+  render();
+}
+
+/* ===== ZDARZENIA ===== */
+function travelEvent(){
+  const e=pick([
+    ()=>{S.cash+=2;log('Na chodniku leży dwuzłotówka. +2 zł','good')},
+    ()=>{passTime(20);log('Straż miejska spisuje cię za siedzenie na murku. -20 min','bad')},
+    ()=>{S.bagG++;log('Ktoś wystawił pustą butelkę na parapet. +1 szkło','good')},
+    ()=>{S.hp-=8;log('Pies z posesji rzuca się na płot. Uciekasz. -8 sił','bad')},
+    ()=>{S.hp=Math.min(100,S.hp+10);log('Znajoma z piekarni daje wczorajszego drożdżowca. +10 sił','good')},
+  ]); e();
+}
+function searchEvent(){
+  const e=pick([
+    ()=>{const pl=S.pools[S.at]; pl.p=0;pl.g=0; log('Zbychu z Letniska już tu był i wyczyścił wszystko na dziś.','bad')},
+    ()=>{if(S.bagP+S.bagG<S.cap){S.bagG+=1;S.hp=Math.min(100,S.hp+5);log('Niedopite piwo w krzakach. Dopijasz. +5 sił, +1 szkło','good')}},
+    ()=>{const n=Math.min(2,S.bagP);S.bagP-=n;log(`Dziura w reklamówce. Wypadło ${n} plastik.`,'bad')},
+    ()=>{S.hp-=5;log('Skaleczenie o stłuczkę. -5 sił','bad')},
+  ]); e();
+}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function log(t,c=''){S.log.unshift({t:`[${fmt(S.t)}] ${t}`,c}); S.log=S.log.slice(0,6); }
+
+/* ===== KONIEC ===== */
+function endGame(){
+  S.over=true; S.t=END;
+  const left=S.bagP*PLASTIC+S.bagG*GLASS;
+  let best=0; try{best=+localStorage.getItem('menel_best')||0}catch(e){}
+  const rec=S.cash>best; if(rec){try{localStorage.setItem('menel_best',S.cash)}catch(e){}}
+  document.getElementById('endtitle').textContent= rec?'NOWY REKORD':'PÓŁNOC';
+  document.getElementById('endtxt').textContent= S.cash>=70?'Dzień jak z bajki. Starczy na tydzień.':S.cash>=35?'Przeżyłeś. Jutro to samo.':'Marny dzień. Pobiedziska nie były łaskawe.';
+  document.getElementById('endcash').textContent=zl(S.cash);
+  document.getElementById('endstats').innerHTML=`Oddane: ${S.totalP} plastik, ${S.totalG} szkło · przeszukań: ${S.searches} · w drodze: ${Math.round(S.walked/60*10)/10} h`+
+    (left?`<br>Przepadło w torbie: ${zl(left)}`:'');
+  document.getElementById('end').classList.add('on');
+  render();
+}
+
+/* ===== RENDER ===== */
+function skyFor(t){
+  const h=t/60;
+  if(h<8) return 'linear-gradient(#2a2f45,#6b5a5a 70%,#a5735a)';
+  if(h<15) return 'linear-gradient(#4a5563,#7d8188 70%,#9a958c)';
+  if(h<17) return 'linear-gradient(#3b3a4f,#7a5a4f 65%,#c07a45)';
+  if(h<20) return 'linear-gradient(#12121f,#2b2235 65%,#5a3330)';
+  return 'linear-gradient(#030305,#0b0a12 70%,#1a1210)';
+}
+function cityFor(id,t){
+  const night=t/60>=17||t/60<7.5;
+  const lamp=night?'#ffcf7a':'#55504a';
+  const glow=night?`<radialGradient id="lg"><stop offset="0" stop-color="#e8a33d" stop-opacity=".55"/><stop offset="1" stop-color="#e8a33d" stop-opacity="0"/></radialGradient>`:'';
+  const g=night?`<ellipse cx="470" cy="215" rx="120" ry="60" fill="url(#lg)"/>`:'';
+  const win=(x,y)=>night&&Math.random()<.45?`<rect x="${x}" y="${y}" width="8" height="10" fill="#e8b45a" opacity=".8"/>`:'';
+  let b='';
+  const sil={
+    rynek:()=>{let s='';for(let i=0;i<7;i++){const x=i*86,h=110+(i%3)*18;s+=`<path d="M${x} 260V${260-h}l43 -28 43 28V260z" fill="#0d0c10"/>`;for(let w=0;w<3;w++)s+=win(x+15+w*22,260-h+20)+win(x+15+w*22,260-h+50)}
+      return s+`<rect x="250" y="210" width="100" height="14" fill="#16141a"/><rect x="292" y="180" width="16" height="32" fill="#16141a"/>`},
+    michal:()=>`<path d="M180 260V140l120-60 120 60v120z" fill="#0d0c10"/><path d="M270 80V10l30-30 30 30v70z" fill="#0d0c10"/>${win(285,40)}`,
+    duch:()=>`<rect x="160" y="130" width="280" height="130" fill="#0d0c10"/><path d="M150 130l150-50 150 50z" fill="#0d0c10"/><rect x="280" y="40" width="40" height="45" fill="#0d0c10"/>`,
+    kazimierz:()=>`<rect x="270" y="150" width="60" height="110" fill="#0d0c10"/><path d="M285 150v-60h30v60zM300 90a12 12 0 1 0 .1 0" fill="#0d0c10"/>`,
+    pkp:()=>`<rect x="40" y="140" width="260" height="120" fill="#0d0c10"/><path d="M30 140l140-40 140 40z" fill="#0d0c10"/>${win(70,170)}${win(120,170)}${win(220,170)}<rect x="0" y="246" width="600" height="4" fill="#333"/><rect x="0" y="254" width="600" height="3" fill="#333"/>`,
+    letnisko:()=>`<rect x="200" y="190" width="160" height="6" fill="#0d0c10"/><rect x="205" y="196" width="6" height="64" fill="#0d0c10"/><rect x="350" y="196" width="6" height="64" fill="#0d0c10"/><rect x="0" y="250" width="600" height="3" fill="#333"/>`,
+    okis:()=>`<rect x="100" y="150" width="400" height="110" fill="#0d0c10"/>${win(140,180)}${win(200,180)}${win(260,180)}${win(320,180)}${win(380,180)}`,
+    sklep:()=>`<rect x="140" y="160" width="320" height="100" fill="#0d0c10"/><rect x="170" y="140" width="260" height="22" fill="${isOpen(L.sklep,t)?'#2a4a2a':'#221'}"/><rect x="190" y="190" width="90" height="70" fill="${isOpen(L.sklep,t)?'#a9c98a33':'#111'}"/>`,
+    lawka:()=>`<rect x="0" y="90" width="230" height="170" fill="#0d0c10"/>${win(30,120)}${win(80,150)}${win(150,120)}<rect x="300" y="225" width="140" height="8" fill="#16141a"/><rect x="310" y="233" width="6" height="27" fill="#16141a"/><rect x="424" y="233" width="6" height="27" fill="#16141a"/>`,
+    dobre:()=>`<rect x="0" y="225" width="600" height="35" fill="#101820"/>${[...Array(25)].map((_,i)=>`<rect x="${i*24}" y="${200+(i%3)*6}" width="2" height="30" fill="#0d0c10"/>`).join('')}<path d="M380 225l60-90" stroke="#0d0c10" stroke-width="2"/>`,
+    biezdruchowo:()=>`<rect x="0" y="215" width="600" height="45" fill="#101820"/><path d="M0 215c100-30 200-10 300-25s200-10 300 0v10H0z" fill="#0d0c10"/><rect x="420" y="150" width="4" height="70" fill="#0d0c10"/><rect x="200" y="150" width="4" height="70" fill="#0d0c10"/><path d="M202 152L422 152" stroke="#0d0c10"/>`,
+    skansen:()=>`${[...Array(8)].map((_,i)=>`<path d="M${40+i*70} 260v-${30+(i%3)*12}l20 -15 20 15v${30+(i%3)*12}z" fill="#0d0c10"/>`).join('')}<path d="M0 230c150-40 400-40 600 0v30H0z" fill="#0d0c10"/>`,
+  };
+  b=(sil[id]||sil.lawka)();
+  return `<defs>${glow}</defs>${g}<path d="M0 260V200c80-20 160 10 260-5s220 10 340-10v75z" fill="#08070a"/>${b}
+   <rect x="468" y="120" width="4" height="140" fill="#1a181e"/><rect x="460" y="116" width="22" height="6" fill="#1a181e"/><circle cx="476" cy="124" r="4" fill="${lamp}"/>
+   <rect x="0" y="257" width="600" height="3" fill="#000"/>`;
+}
+function render(){
+  const l=L[S.at];
+  document.getElementById('clock').textContent=fmt(S.t);
+  document.getElementById('cash').textContent=zl(S.cash);
+  const hp=Math.max(0,S.hp);
+  const hpEl=document.getElementById('hp'); hpEl.style.width=hp+'%'; hpEl.style.background=hp<25?'var(--blood)':hp<50?'var(--sodium)':'var(--green)';
+  let best=0; try{best=+localStorage.getItem('menel_best')||0}catch(e){}
+  document.getElementById('best').textContent=zl(best);
+  document.getElementById('sky').style.background=skyFor(S.t);
+  document.getElementById('city').innerHTML=cityFor(l.id,S.t);
+  document.getElementById('lname').textContent=l.name;
+  document.getElementById('ldesc').textContent=l.desc;
+  document.getElementById('tag').textContent=l.real?'miejsce prawdziwe':'miejsce wymyślone';
+  document.getElementById('log').innerHTML=S.log.map(x=>`<div class="${x.c}">${x.t}</div>`).join('');
+  const pl=S.pools[l.id];
+  const hint = pl.searched>=2?'wyczyszczone':pl.searched>=1?'przeszukane':'nietknięte';
+  let a=`<button class="btn" onclick="search()" ${(!isOpen(l,S.t)&&l.id==='skansen')?'disabled':''}><b>🔍 Przeszukaj</b><small>${SEARCH_MIN} min · ${hint}</small></button>
+         <button class="btn" onclick="toggleMap(true)"><b>🗺 Idź dalej</b><small>mapa miasta</small></button>`;
+  if(l.shop){
+    const o=isOpen(l,S.t);
+    a+=`<button class="btn wide" onclick="cashIn()" ${o?'':'disabled'}><b>♻ Oddaj butelki</b><small>${o?'+'+zl(S.bagP*PLASTIC+S.bagG*GLASS):'zamknięte, czynne 6:00–22:00'}</small></button>
+        <button class="btn" onclick="buy('bulka')" ${o?'':'disabled'}><b>🥖 Bułka</b><small>2 zł · +20 sił</small></button>
+        <button class="btn" onclick="buy('piwo')" ${o?'':'disabled'}><b>🍺 Piwo</b><small>4 zł · +35 sił</small></button>
+        ${S.bought?'':`<button class="btn" onclick="buy('torba')" ${o?'':'disabled'}><b>👜 Mocna torba</b><small>4 zł · +10 miejsca</small></button>`}`;
+  }
+  a+=`<button class="btn" onclick="rest()"><b>💤 Odpocznij</b><small>60 min · ${l.sleep?'+30':'+15'} sił</small></button>`;
+  if(l.id==='skansen'&&!isOpen(l,S.t)) a+=`<button class="btn wide" disabled><b>Skansen zamknięty</b><small>czynny 8:00–20:00</small></button>`;
+  document.getElementById('actions').innerHTML=a;
+  const n=S.bagP+S.bagG;
+  document.getElementById('bag').innerHTML=`<div class="row"><span>Reklamówka</span><span>${n}/${S.cap}</span></div>
+    <div class="row"><span class="p">plastik × ${S.bagP}</span><span class="g">szkło × ${S.bagG}</span><span>= ${zl(S.bagP*PLASTIC+S.bagG*GLASS)}</span></div>`;
+}
+function toggleMap(on){
+  const m=document.getElementById('map'); m.classList.toggle('on',on); if(!on)return;
+  const here=L[S.at];
+  let s='';
+  LOCS.forEach(l=>{ if(l.id!==S.at) s+=`<line x1="${here.x}" y1="${here.y}" x2="${l.x}" y2="${l.y}" stroke="#2c2833" stroke-dasharray="3 5"/>` });
+  LOCS.forEach(l=>{
+    const m=travelMin(S.at,l.id), cls=(l.id===S.at?'here':'')+(isOpen(l,S.t+m)?'':' closed');
+    s+=`<g class="node ${cls}" onclick="${l.id===S.at?'toggleMap(false)':`go('${l.id}')`}">
+      <circle cx="${l.x}" cy="${l.y}" r="${l.id===S.at?11:9}"/>
+      <rect x="${l.x-70}" y="${l.y+12}" width="140" height="34" fill="transparent"/>
+      <text x="${l.x}" y="${l.y+26}" text-anchor="middle">${l.name.replace('Przystanek ','').replace('Kościół ','Kośc. ').replace('Pomnik Kazimierza Odnowiciela','Pomnik Kazimierza')}</text>
+      <text class="cost" x="${l.x}" y="${l.y+40}" text-anchor="middle">${l.id===S.at?'tu jesteś':m+' min'}${l.shop?' · zwrot':''}</text></g>`;
+  });
+  document.getElementById('mapsvg').innerHTML=s;
+}
+function startGame(){
+  S=newState();
+  document.getElementById('intro').classList.remove('on');
+  document.getElementById('end').classList.remove('on');
+  log('Budzisz się. Zimno. Trzeba ruszać.');
+  render();
+}
+S=newState(); render();
+</script>
+</body>
+</html>
