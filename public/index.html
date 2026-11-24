@@ -63,15 +63,14 @@ button{font:inherit;color:inherit}
 /* map */
 #map{position:fixed;inset:0;background:#07060aee;display:none;z-index:5}
 #map.on{display:block}
-#map svg{width:100%;height:100%}
-#map .close{position:absolute;right:10px;top:10px;z-index:2;background:var(--panel2);border:1px solid var(--line);padding:8px 14px;cursor:pointer}
-#map .hint{position:absolute;left:12px;top:12px;font-size:12px;color:var(--dim);max-width:55%}
-.node{cursor:pointer}
-.node circle{fill:#1d1a23;stroke:var(--sodium);stroke-width:2}
-.node.here circle{fill:var(--sodium)}
-.node.closed circle{stroke:#555}
-.node text{fill:var(--txt);font-size:13px;font-family:inherit}
-.node text.cost{fill:var(--sodium2);font-size:11px}
+#map svg{width:100%;height:calc(100% - 74px);display:block}
+#mapbar{position:absolute;left:0;right:0;bottom:0;min-height:74px;background:#0b0a0d;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:8px 12px;font-size:13px;line-height:1.4}
+#mapinfo{flex:1;min-width:0}
+#mapbar .btn{min-height:44px;padding:8px 16px;text-align:center}
+.tile.ok{cursor:pointer}
+.tc{fill:#8a8478;font-size:10px;text-anchor:middle;font-family:inherit}
+.tc.on{fill:#ffcf7a;font-weight:bold;text-anchor:end;font-size:11px}
+.pl{font-size:8.5px;fill:#e9e2d4;paint-order:stroke;stroke:#000;stroke-width:2.5px;text-anchor:middle;font-family:inherit}
 /* overlays */
 .ov{position:fixed;inset:0;background:#000e;z-index:9;display:none;align-items:center;justify-content:center;text-align:center;padding:20px}
 .ov.on{display:flex}
@@ -96,8 +95,6 @@ button{font:inherit;color:inherit}
   .btn{padding:12px 14px;min-height:60px} .btn b{font-size:17px} .btn small{font-size:13px}
   .btn:hover:not([disabled]){background:#2a2530;border-color:var(--sodium)}
   #bag{font-size:16px;padding:8px 16px 14px}
-  .node text{font-size:15px} .node text.cost{font-size:13px}
-  #map .hint{font-size:14px} #map .close:hover{border-color:var(--sodium)}
   .ov .box{max-width:680px} .ov h2{font-size:38px} .ov p{font-size:17px} .ov .big{font-size:44px}
 }
 @media (min-width:1600px) and (min-height:800px){
@@ -132,16 +129,19 @@ button{font:inherit;color:inherit}
   </div>
 </div>
 
-<div id="map"><div class="hint">Mapa schematyczna, nie w skali. Czas dojścia liczony od miejsca, w którym stoisz.</div>
-  <button class="close" onclick="toggleMap(false)">✕ Zamknij</button>
-  <svg id="mapsvg" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet"></svg></div>
+<div id="map">
+  <svg id="mapsvg" viewBox="0 0 800 360" preserveAspectRatio="xMidYMid meet"></svg>
+  <div id="mapbar"><div id="mapinfo"></div>
+    <button class="btn" id="mapgo" onclick="confirmWalk()" style="display:none"><b>Idź</b></button>
+    <button class="btn" onclick="toggleMap(false)"><b>✕ Zamknij</b></button></div>
+</div>
 
 <div class="ov on" id="intro"><div class="box">
   <h2>MENEL</h2>
   <p>Budzisz się na ławce w Pobiedziskach. Jest 7:00, zimno, w głowie dudni.</p>
   <p>Do północy musisz uzbierać jak najwięcej kasy z butelek z kaucją:<br>
   <span style="color:var(--plastic)">plastik 0,50 zł</span> · <span style="color:var(--glass)">szkło po piwie 1,00 zł</span>.</p>
-  <p style="color:var(--dim);font-size:12.5px">Każde przejście i przeszukanie zjada czas i siły. Butelki oddajesz w sklepie, zanim go zamkną. Co zostanie w torbie o północy, przepada, chyba że zdążysz przykitrać butelki na swojej ławce na jutro (15% szans, że ktoś je znajdzie).</p>
+  <p style="color:var(--dim);font-size:12.5px">Miasto to plansza: idziesz po polach, a każde pole kosztuje czas i siły (ulica najmniej, zarośla najwięcej). Każde przeszukanie też zjada czas i siły. Butelki oddajesz w sklepie, zanim go zamkną. Co zostanie w torbie o północy, przepada, chyba że zdążysz przykitrać butelki na swojej ławce na jutro (15% szans, że ktoś je znajdzie).</p>
   <button class="btn" onclick="startGame()"><b>Wstań z ławki</b></button>
 </div></div>
 
@@ -198,7 +198,14 @@ const LOCS = [
   desc:'Miniatury zabytków Wielkopolski w skali 1:20, ok. 5 km od miasta przy trasie na Gniezno. Turyści i ich butelki.',
   p:4, g:.8, peak:[11,17], open:[8,20]},
 ];
-const L = Object.fromEntries(LOCS.map(l=>[l.id,l]));
+/* pola między miejscami: przeszukiwalne, ale ubogie */
+const TLOCS = [
+ {id:'ulica',   name:'Ulica',            tile:true, desc:'Asfalt, studzienki, rynsztok. Czasem coś się poniewiera przy krawężniku.', p:.5, g:.4, peak:[17,24]},
+ {id:'trawnik', name:'Trawnik i ścieżka', tile:true, desc:'Wydeptana ścieżka między blokami. Pod krzakiem czasem błyśnie szkło.',    p:.4, g:.7, peak:[12,22]},
+ {id:'las',     name:'Zarośla',           tile:true, desc:'Chaszcze, mokre liście, ślady po cudzych imprezach.',                      p:.3, g:.9, peak:[0,24]},
+];
+const ALL = LOCS.concat(TLOCS);
+const L = Object.fromEntries(ALL.map(l=>[l.id,l]));
 
 /* ===== STAN ===== */
 let S;
@@ -224,10 +231,57 @@ function recalcCap(){
 /* dopłata: rower+wózek po zakupie wózka lub roweru kosztuje różnicę */
 function ridePrice(id){ return RIDES[id].price-(S.ride&&id==='rowerwozek'?RIDES[S.ride].price:0); }
 function ridesOffered(){ return S.ride==='rowerwozek'?[]:S.ride?['rowerwozek']:Object.keys(RIDES); }
+/* ===== PLANSZA ===== */
+const COLS=18, ROWS=8;
+const GRID=[
+ "WWWGFFGGGFWWWFFFFF",
+ "WWGGRRRRRGGWWGFFFF",
+ "WGRRHRHRHRGWWGFFFF",
+ "GRRRRRRRRRRRRRRRRR",
+ "GRHRHRHRHRHGGGFFFF",
+ "RRRRRRRRRRRFFGFFFF",
+ "RGRGGGRGGGRGGFFFFF",
+ "RGRRRRRRRRRFFFFFFF"];
+/* t = minut na pole, e = siły na pole (pieszo); ok = można wejść */
+const TERR={
+ R:{n:'ulica',   t:5,  e:.5, fill:'#2b2831', ok:1},
+ G:{n:'trawnik', t:10, e:1,  fill:'#26331f', ok:1},
+ F:{n:'zarośla', t:15, e:1.5,fill:'#18261c', ok:1},
+ W:{n:'woda',    fill:'#10202e', ok:0},
+ H:{n:'budynki', fill:'#0f0e12', ok:0},
+};
+const PLACES={lawka:[6,7],sklep:[6,6],rynek:[5,3],michal:[5,2],duch:[3,2],kazimierz:[7,2],pkp:[0,5],letnisko:[0,7],okis:[9,4],dobre:[10,2],biezdruchowo:[2,1],skansen:[17,3]};
+const SHORT={lawka:'Ławka',sklep:'Sklep',rynek:'Rynek',michal:'Michał',duch:'Duch',kazimierz:'Pomnik',pkp:'PKP',letnisko:'Letn.',okis:'OKiS',dobre:'Dobre',biezdruchowo:'Biezdr.',skansen:'Skansen'};
+const ICON={lawka:'🏠',sklep:'🏪',rynek:'⛲',michal:'⛪',duch:'⛪',kazimierz:'🗿',pkp:'🚉',letnisko:'🚏',okis:'🏟',dobre:'🎣',biezdruchowo:'🏖',skansen:'🏰'};
+const PLACE_AT={};
+LOCS.forEach(l=>{ [l.c,l.r]=PLACES[l.id]; PLACE_AT[l.c+','+l.r]=l.id; });
+function walkable(c,r){return c>=0&&r>=0&&c<COLS&&r<ROWS&&!!TERR[GRID[r][c]].ok}
+function atFor(c,r){return PLACE_AT[c+','+r]||({R:'ulica',G:'trawnik',F:'las'})[GRID[r][c]]}
+function rideT(){return S&&S.ride?RIDES[S.ride].time:1}
+function stepCost(c,r){const T=TERR[GRID[r][c]];return {t:T.t*rideT(), e:T.e*rideT()}}
+function fE(x){return (Math.round(x*100)/100).toString().replace('.',',')}
+/* najtańsza (pod względem sił) trasa po polach */
+function findPath(c0,r0,c1,r1){
+  const N=COLS*ROWS, key=(c,r)=>r*COLS+c, dist=new Array(N).fill(Infinity), prev=new Array(N).fill(-1), done=new Array(N).fill(false);
+  dist[key(c0,r0)]=0;
+  for(;;){
+    let u=-1,b=Infinity; for(let i=0;i<N;i++) if(!done[i]&&dist[i]<b){b=dist[i];u=i}
+    if(u<0||u===key(c1,r1))break; done[u]=true;
+    const uc=u%COLS, ur=(u/COLS)|0;
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dc,dr])=>{
+      const c=uc+dc, r=ur+dr; if(!walkable(c,r))return;
+      const T=TERR[GRID[r][c]], k=key(c,r), w=T.e+T.t*0.001;
+      if(dist[u]+w<dist[k]){dist[k]=dist[u]+w;prev[k]=u}
+    });
+  }
+  let k=key(c1,r1); if(prev[k]<0&&!(c0===c1&&r0===r1))return null;
+  const path=[]; while(k!==key(c0,r0)){path.unshift([k%COLS,(k/COLS)|0]);k=prev[k]}
+  return path;
+}
 function newState(){
   const pools={};
-  LOCS.forEach(l=>pools[l.id]={p:Math.round(l.p+rnd(0,2)), g:Math.round(l.g+rnd(0,2)), searched:0});
-  return {t:7*60, at:'lawka', cash:0, hp:80, bagP:0, bagG:0, cap:BASE_CAP, has:{}, ride:null, kit:loadKit(), kitLost:false, pools,
+  ALL.forEach(l=>pools[l.id]={p:Math.round(l.p+rnd(0,2)), g:Math.round(l.g+rnd(0,2)), searched:0});
+  return {t:7*60, at:'lawka', cash:0, hp:80, bagP:0, bagG:0, pos:{c:PLACES.lawka[0],r:PLACES.lawka[1]}, acc:0, faints:0, cap:BASE_CAP, has:{}, ride:null, kit:loadKit(), kitLost:false, pools,
     totalP:0,totalG:0, searches:0, walked:0, over:false, log:[]};
 }
 function rnd(a,b){return a+Math.random()*(b-a)}
@@ -239,45 +293,24 @@ function isOpen(l,t){if(!l.open)return true;const h=t/60;return h>=l.open[0]&&h<
 
 /* pule rosną z upływem czasu */
 function passTime(min){
-  const steps=Math.round(min/10);
+  const steps=Math.round(min/5);
   for(let i=0;i<steps;i++){
-    S.t+=10;
-    S.hp-= (S.t/60>=21?1.0:0.6);
+    S.t+=5;
+    S.hp-= (S.t/60>=21?0.5:0.3);
     const h=Math.floor(S.t/60);
-    LOCS.forEach(l=>{
+    ALL.forEach(l=>{
       const pl=S.pools[l.id], m=hourMod(l,h);
-      if(Math.random()<0.06*l.p*m) pl.p++;
-      if(Math.random()<0.05*l.g*m) pl.g++;
-      pl.searched=Math.max(0,pl.searched-0.04);
+      if(Math.random()<0.03*l.p*m) pl.p++;
+      if(Math.random()<0.025*l.g*m) pl.g++;
+      pl.searched=Math.max(0,pl.searched-0.02);
       pl.p=Math.min(pl.p,14); pl.g=Math.min(pl.g,14);
     });
     if(S.hp<=0){faint();return}
     if(S.t>=END){endGame();return}
   }
 }
-function travelMin(a,b){
-  if(a===b)return 0;
-  const A=L[a],B=L[b];
-  let m;
-  if(A.far||B.far) m=60;
-  else { const d=Math.hypot(A.x-B.x,A.y-B.y); m=Math.max(10,Math.round(d/8/5)*5); }
-  if(S&&S.ride) m=Math.max(5,Math.round(m*RIDES[S.ride].time/5)*5);
-  return m;
-}
 
 /* ===== AKCJE ===== */
-function go(id){
-  if(S.over)return;
-  const m=travelMin(S.at,id);
-  toggleMap(false);
-  log(`Idziesz: ${L[id].name} (${m} min).`);
-  S.hp-=m/15; S.walked+=m;
-  S.at=id;
-  passTime(m);
-  if(S.over)return;
-  if(Math.random()<0.12) travelEvent();
-  render();
-}
 function search(){
   const l=L[S.at], pl=S.pools[l.id];
   passTime(SEARCH_MIN); if(S.over)return;
@@ -348,7 +381,7 @@ function rest(){
 function faint(){
   log('Ciemność. Odpływasz na chodniku...','bad');
   const stolen=Math.ceil((S.bagP+S.bagG)/2);
-  S.hp=35; S.t+=120;
+  S.hp=35; S.t+=120; S.faints=(S.faints||0)+1;
   let s=stolen; while(s>0&&(S.bagP||S.bagG)){ if(S.bagG){S.bagG--}else{S.bagP--} s--; }
   log(`Budzisz się 2 godziny później. Ktoś podprowadził ${stolen} butelek.`,'bad');
   if(S.t>=END){endGame();return}
@@ -411,6 +444,9 @@ function cityFor(id,t){
   const win=(x,y)=>night&&Math.random()<.45?`<rect x="${x}" y="${y}" width="8" height="10" fill="#e8b45a" opacity=".8"/>`:'';
   let b='';
   const sil={
+    ulica:()=>[...Array(6)].map((_,i)=>`<rect x="${i*100+10}" y="${150-(i%2)*30}" width="80" height="${110+(i%2)*30}" fill="#0d0c10"/>${win(i*100+30,185)}${win(i*100+55,185)}`).join(''),
+    trawnik:()=>[...Array(7)].map((_,i)=>`<rect x="${i*88+40}" y="${170-(i%3)*14}" width="6" height="${90+(i%3)*14}" fill="#0d0c10"/><circle cx="${i*88+43}" cy="${165-(i%3)*14}" r="${26+(i%2)*6}" fill="#0b0f0c"/>`).join(''),
+    las:()=>[...Array(12)].map((_,i)=>`<path d="M${i*52-10} 260L${i*52+16} ${90+(i%4)*18}L${i*52+42} 260z" fill="#090d0a"/>`).join(''),
     rynek:()=>{let s='';for(let i=0;i<7;i++){const x=i*86,h=110+(i%3)*18;s+=`<path d="M${x} 260V${260-h}l43 -28 43 28V260z" fill="#0d0c10"/>`;for(let w=0;w<3;w++)s+=win(x+15+w*22,260-h+20)+win(x+15+w*22,260-h+50)}
       return s+`<rect x="250" y="210" width="100" height="14" fill="#16141a"/><rect x="292" y="180" width="16" height="32" fill="#16141a"/>`},
     michal:()=>`<path d="M180 260V140l120-60 120 60v120z" fill="#0d0c10"/><path d="M270 80V10l30-30 30 30v70z" fill="#0d0c10"/>${win(285,40)}`,
@@ -442,12 +478,12 @@ function render(){
   document.getElementById('city').innerHTML=cityFor(l.id,S.t);
   document.getElementById('lname').textContent=l.name;
   document.getElementById('ldesc').textContent=l.desc;
-  document.getElementById('tag').textContent=l.real?'miejsce prawdziwe':'miejsce wymyślone';
+  document.getElementById('tag').textContent=l.tile?'po drodze':l.real?'miejsce prawdziwe':'miejsce wymyślone';
   document.getElementById('log').innerHTML=S.log.map(x=>`<div class="${x.c}">${x.t}</div>`).join('');
   const pl=S.pools[l.id];
   const hint = pl.searched>=2?'wyczyszczone':pl.searched>=1?'przeszukane':'nietknięte';
   let a=`<button class="btn" onclick="search()" ${(!isOpen(l,S.t)&&l.id==='skansen')?'disabled':''}><b>🔍 Przeszukaj</b><small>${SEARCH_MIN} min · ${hint}</small></button>
-         <button class="btn" onclick="toggleMap(true)"><b>🗺 Idź dalej</b><small>mapa miasta</small></button>`;
+         <button class="btn" onclick="toggleMap(true)"><b>🗺 Plansza</b><small>ruch po polach</small></button>`;
   if(l.shop){
     const o=isOpen(l,S.t);
     a+=`<button class="btn wide" onclick="cashIn()" ${o?'':'disabled'}><b>♻ Oddaj butelki</b><small>${o?'+'+zl(S.bagP*PLASTIC+S.bagG*GLASS):'zamknięte, czynne 6:00–22:00'}</small></button>
@@ -475,21 +511,103 @@ function gearLabel(){
   if(S.ride)p.push(RIDES[S.ride].ic+' '+RIDES[S.ride].n.toLowerCase());
   return p.join(' + ');
 }
+/* ===== PLANSZA: rysowanie i ruch ===== */
+const TS=44, OX=4, OY=4;
+let SEL=null, WALKING=false;
 function toggleMap(on){
-  const m=document.getElementById('map'); m.classList.toggle('on',on); if(!on)return;
-  const here=L[S.at];
-  let s='';
-  LOCS.forEach(l=>{ if(l.id!==S.at) s+=`<line x1="${here.x}" y1="${here.y}" x2="${l.x}" y2="${l.y}" stroke="#2c2833" stroke-dasharray="3 5"/>` });
-  LOCS.forEach(l=>{
-    const m=travelMin(S.at,l.id), cls=(l.id===S.at?'here':'')+(isOpen(l,S.t+m)?'':' closed');
-    s+=`<g class="node ${cls}" onclick="${l.id===S.at?'toggleMap(false)':`go('${l.id}')`}">
-      <circle cx="${l.x}" cy="${l.y}" r="${l.id===S.at?11:9}"/>
-      <rect x="${l.x-70}" y="${l.y+12}" width="140" height="34" fill="transparent"/>
-      <text x="${l.x}" y="${l.y+26}" text-anchor="middle">${l.name.replace('Przystanek ','').replace('Kościół ','Kośc. ').replace('Pomnik Kazimierza Odnowiciela','Pomnik Kazimierza')}</text>
-      <text class="cost" x="${l.x}" y="${l.y+40}" text-anchor="middle">${l.id===S.at?'tu jesteś':m+' min'}${l.shop?' · zwrot':''}</text></g>`;
-  });
-  document.getElementById('mapsvg').innerHTML=s;
+  const m=document.getElementById('map'); m.classList.toggle('on',on);
+  if(on){SEL=null; drawBoard(); updateBar();}
 }
+function drawBoard(){
+  const onPath={}, cum={}; let acc=0;
+  if(SEL) SEL.path.forEach(([c,r])=>{acc+=stepCost(c,r).e; onPath[c+','+r]=1; cum[c+','+r]=acc;});
+  let o='';
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const ch=GRID[r][c], T=TERR[ch], x=OX+c*TS, y=OY+r*TS, k=c+','+r, id=PLACE_AT[k], w=TS-2;
+    o+=`<g class="tile${T.ok?' ok':''}" onclick="tapTile(${c},${r})"><rect x="${x}" y="${y}" width="${w}" height="${w}" rx="4" fill="${T.fill}"/>`;
+    if(ch==='H') o+=`<path d="M${x+9} ${y+w-8}V${y+20}L${x+w/2} ${y+9}L${x+w-9} ${y+20}V${y+w-8}z" fill="#1c1a21"/>`;
+    if(ch==='W') o+=`<path d="M${x+6} ${y+16}q8 -6 16 0t16 0M${x+6} ${y+30}q8 -6 16 0t16 0" stroke="#1d3a52" fill="none" stroke-width="2"/>`;
+    if(ch==='F') o+=`<circle cx="${x+13}" cy="${y+15}" r="8" fill="#1f3a26"/><circle cx="${x+29}" cy="${y+26}" r="9" fill="#234530"/>`;
+    if(ch==='G') o+=`<circle cx="${x+10}" cy="${y+12}" r="1.5" fill="#3d5230"/><circle cx="${x+30}" cy="${y+30}" r="1.5" fill="#3d5230"/>`;
+    if(onPath[k]) o+=`<rect x="${x}" y="${y}" width="${w}" height="${w}" rx="4" fill="#e8a33d" opacity=".28"/>`;
+    if(id){
+      const open=!L[id].open||isOpen(L[id],S.t);
+      o+=`<rect x="${x+1}" y="${y+1}" width="${w-2}" height="${w-2}" rx="4" fill="none" stroke="${open?'#e8a33d':'#555'}" stroke-width="1.5"/>
+          <text x="${x+w/2}" y="${y+21}" text-anchor="middle" font-size="19" opacity="${open?1:.4}">${ICON[id]}</text>
+          <text class="pl" x="${x+w/2}" y="${y+w-4}">${SHORT[id]}</text>`;
+    }
+    if(T.ok){
+      if(onPath[k]) o+=`<text class="tc on" x="${x+w-4}" y="${y+11}" text-anchor="end">−${fE(cum[k])}</text>`;
+      else if(!id) o+=`<text class="tc" x="${x+w/2}" y="${y+w-6}">${fE(stepCost(c,r).e)}</text>`;
+    }
+    if(SEL&&SEL.c===c&&SEL.r===r) o+=`<rect x="${x}" y="${y}" width="${w}" height="${w}" rx="4" fill="none" stroke="#ffcf7a" stroke-width="2.5"/>`;
+    o+=`</g>`;
+  }
+  const px=OX+S.pos.c*TS+(TS-2)/2, py=OY+S.pos.r*TS+(TS-2)/2;
+  o+=`<g pointer-events="none"><circle cx="${px}" cy="${py}" r="10" fill="#e8a33d" stroke="#fff" stroke-width="2"/><text x="${px}" y="${py+4}" text-anchor="middle" font-size="11" font-weight="bold" fill="#000">Ty</text></g>`;
+  document.getElementById('mapsvg').innerHTML=o;
+}
+function planTo(c,r){
+  const path=findPath(S.pos.c,S.pos.r,c,r); if(!path)return null;
+  let t=0,e=0; path.forEach(([pc,pr])=>{const q=stepCost(pc,pr);t+=q.t;e+=q.e;});
+  return {c,r,path,t,e};
+}
+function tapTile(c,r){
+  if(WALKING||S.over||!walkable(c,r))return;
+  if(c===S.pos.c&&r===S.pos.r){SEL=null;drawBoard();updateBar();return}
+  if(SEL&&SEL.c===c&&SEL.r===r){confirmWalk();return}
+  SEL=planTo(c,r); drawBoard(); updateBar();
+}
+function updateBar(){
+  const info=document.getElementById('mapinfo'), go=document.getElementById('mapgo');
+  if(!SEL){
+    go.style.display='none';
+    info.innerHTML=`Dotknij pola, żeby zobaczyć trasę i koszt sił. Dotknij drugi raz (albo „Idź”), żeby ruszyć.<br><span style="color:var(--dim)">Koszt jednego pola pieszo: ulica ⚡${fE(TERR.R.e*rideT())} · trawnik ⚡${fE(TERR.G.e*rideT())} · zarośla ⚡${fE(TERR.F.e*rideT())}</span>`;
+    return;
+  }
+  const t=Math.round(SEL.t), drain=(SEL.t/5)*(S.t/60>=21?0.5:0.3), total=SEL.e+drain, after=Math.round(S.hp-total);
+  const id=PLACE_AT[SEL.c+','+SEL.r], l=id?L[id]:null, arr=S.t+SEL.t;
+  let warn='';
+  if(total>=S.hp) warn+=' <span style="color:var(--blood)">⚠ zemdlejesz po drodze</span>';
+  if(l&&l.open&&!isOpen(l,arr)) warn+=' <span style="color:var(--blood)">⚠ będzie zamknięte</span>';
+  if(arr>=END) warn+=' <span style="color:var(--blood)">⚠ nie zdążysz przed północą</span>';
+  info.innerHTML=`<b style="color:var(--sodium2)">${l?l.name:TERR[GRID[SEL.r][SEL.c]].n}</b> · ${SEL.path.length} pól · ${t} min · ruch ⚡${fE(SEL.e)}<br>Siły: ${Math.round(S.hp)} → ${Math.max(0,after)} (z upływem czasu) · przyjdziesz o ${fmt(arr)}${warn}`;
+  go.style.display='';
+}
+function confirmWalk(){ if(!SEL)return; const p=SEL.path; SEL=null; walkPath(p,true); }
+function walkPath(path,closeMap){
+  if(WALKING||S.over||!path.length)return;
+  WALKING=true; const f0=S.faints||0; let i=0, wasAt=S.at;
+  const mapOpen=()=>document.getElementById('map').classList.contains('on');
+  (function step(){
+    if(S.over){WALKING=false; if(closeMap)toggleMap(false); render(); return}
+    if(i>=path.length){ finish(); return }
+    const [c,r]=path[i++], q=stepCost(c,r);
+    S.pos={c,r}; S.at=atFor(c,r); S.walked+=q.t; S.hp-=q.e;
+    let stop=false;
+    if(S.hp<=0){faint();stop=true}
+    else{
+      S.acc=(S.acc||0)+q.t;
+      while(S.acc>=5&&!S.over){S.acc-=5; passTime(5); if((S.faints||0)!==f0){stop=true;break}}
+      if(!stop&&!S.over&&!PLACE_AT[c+','+r]&&Math.random()<0.04){travelEvent();stop=true}
+    }
+    render(); if(mapOpen())drawBoard();
+    if(stop||S.over){ finish(); return }
+    setTimeout(step,130);
+  })();
+  function finish(){
+    WALKING=false;
+    if(!S.over&&PLACE_AT[S.pos.c+','+S.pos.r]&&S.at!==wasAt){log(`Docierasz: ${L[S.at].name}.`);}
+    if(closeMap)toggleMap(false);
+    render(); if(mapOpen()){updateBar();drawBoard();}
+  }
+}
+addEventListener('keydown',e=>{
+  const d={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]}[e.key];
+  if(!d||WALKING||!S||S.over||document.querySelector('.ov.on'))return;
+  const c=S.pos.c+d[0], r=S.pos.r+d[1]; if(!walkable(c,r))return;
+  e.preventDefault(); SEL=null; walkPath([[c,r]],false);
+});
 function startGame(){
   S=newState();
   document.getElementById('intro').classList.remove('on');

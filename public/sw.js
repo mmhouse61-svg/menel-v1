@@ -1,5 +1,5 @@
 // Service worker: najpierw sieć (świeże wersje gry), a offline bierze z pamięci podręcznej.
-const WERSJA = 'menel-v4';
+const WERSJA = 'menel-v5';
 const PLIKI = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
