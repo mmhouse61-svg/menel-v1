@@ -50,14 +50,14 @@ button{font:inherit;color:inherit}
 #log div:nth-child(n+3){opacity:.55} #log div:nth-child(n+4){display:none}
 /* side */
 #side{display:flex;flex-direction:column;min-height:0;background:var(--panel)}
-#actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px}
+#actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;overflow-y:auto;min-height:0}
 .btn{background:var(--panel2);border:1px solid var(--line);padding:9px 8px;text-align:left;cursor:pointer;min-height:46px;border-radius:3px}
 .btn:active{transform:translateY(1px);background:#2a2530}
 .btn b{display:block;font-size:14px;color:var(--sodium2)}
 .btn small{color:var(--dim);font-size:11px}
 .btn[disabled]{opacity:.35;pointer-events:none}
 .btn.wide{grid-column:span 2}
-#bag{padding:4px 10px 8px;font-size:13px;color:var(--dim);border-top:1px solid var(--line)}
+#bag{flex:none;padding:4px 10px 8px;font-size:13px;color:var(--dim);border-top:1px solid var(--line)}
 #bag .row{display:flex;justify-content:space-between;margin-top:3px}
 #bag .p{color:var(--plastic)} #bag .g{color:var(--glass)}
 /* map */
@@ -141,7 +141,7 @@ button{font:inherit;color:inherit}
   <p>Budzisz się na ławce w Pobiedziskach. Jest 7:00, zimno, w głowie dudni.</p>
   <p>Do północy musisz uzbierać jak najwięcej kasy z butelek z kaucją:<br>
   <span style="color:var(--plastic)">plastik 0,50 zł</span> · <span style="color:var(--glass)">szkło po piwie 1,00 zł</span>.</p>
-  <p style="color:var(--dim);font-size:12.5px">Każde przejście i przeszukanie zjada czas i siły. Butelki oddajesz w sklepie, zanim go zamkną. Co zostanie w torbie o północy, przepada.</p>
+  <p style="color:var(--dim);font-size:12.5px">Każde przejście i przeszukanie zjada czas i siły. Butelki oddajesz w sklepie, zanim go zamkną. Co zostanie w torbie o północy, przepada, chyba że zdążysz przykitrać butelki na swojej ławce na jutro (15% szans, że ktoś je znajdzie).</p>
   <button class="btn" onclick="startGame()"><b>Wstań z ławki</b></button>
 </div></div>
 
@@ -202,11 +202,32 @@ const L = Object.fromEntries(LOCS.map(l=>[l.id,l]));
 
 /* ===== STAN ===== */
 let S;
-const PLASTIC=0.5, GLASS=1.0, SEARCH_MIN=20, END=24*60;
+const PLASTIC=0.5, GLASS=1.0, SEARCH_MIN=20, END=24*60, BASE_CAP=15;
+/* ===== SPRZĘT (sklep) ===== */
+const BAGS={
+  torba:{n:'Mocna torba', ic:'👜', price:4, cap:10},
+  worek:{n:'Duży worek',  ic:'🛍', price:8, cap:15},
+};
+/* time = mnożnik czasu przejścia (mniej = szybciej); cap = dodatkowe miejsce na butelki */
+const RIDES={
+  wozek:     {n:'Wózek sklepowy', ic:'🛒',   price:15, cap:30, time:1.25, note:'wolniej, ale dużo miejsca'},
+  rower:     {n:'Rower',          ic:'🚲',   price:22, cap:5,  time:0.5,  note:'idziesz 2× szybciej, mniej sił'},
+  rowerwozek:{n:'Rower + wózek',  ic:'🚲🛒', price:34, cap:30, time:0.65, note:'szybko i dużo miejsca'},
+};
+/* ===== KITRUNEK (schowek na ławce, przechodzi na następny dzień) ===== */
+const KIT_CAP=40, KIT_RISK=0.15;
+function loadKit(){ try{const k=JSON.parse(localStorage.getItem('menel_kit')||'null'); if(k&&k.p>=0&&k.g>=0)return {p:k.p|0,g:k.g|0}}catch(e){} return {p:0,g:0}; }
+function saveKit(){ try{localStorage.setItem('menel_kit',JSON.stringify(S.kit))}catch(e){} }
+function recalcCap(){
+  S.cap=BASE_CAP+Object.keys(BAGS).reduce((c,k)=>c+(S.has[k]?BAGS[k].cap:0),0)+(S.ride?RIDES[S.ride].cap:0);
+}
+/* dopłata: rower+wózek po zakupie wózka lub roweru kosztuje różnicę */
+function ridePrice(id){ return RIDES[id].price-(S.ride&&id==='rowerwozek'?RIDES[S.ride].price:0); }
+function ridesOffered(){ return S.ride==='rowerwozek'?[]:S.ride?['rowerwozek']:Object.keys(RIDES); }
 function newState(){
   const pools={};
   LOCS.forEach(l=>pools[l.id]={p:Math.round(l.p+rnd(0,2)), g:Math.round(l.g+rnd(0,2)), searched:0});
-  return {t:7*60, at:'lawka', cash:0, hp:80, bagP:0, bagG:0, cap:15, pools,
+  return {t:7*60, at:'lawka', cash:0, hp:80, bagP:0, bagG:0, cap:BASE_CAP, has:{}, ride:null, kit:loadKit(), kitLost:false, pools,
     totalP:0,totalG:0, searches:0, walked:0, over:false, log:[]};
 }
 function rnd(a,b){return a+Math.random()*(b-a)}
@@ -237,9 +258,11 @@ function passTime(min){
 function travelMin(a,b){
   if(a===b)return 0;
   const A=L[a],B=L[b];
-  if(A.far||B.far) return 60;
-  const d=Math.hypot(A.x-B.x,A.y-B.y);
-  return Math.max(10,Math.round(d/8/5)*5);
+  let m;
+  if(A.far||B.far) m=60;
+  else { const d=Math.hypot(A.x-B.x,A.y-B.y); m=Math.max(10,Math.round(d/8/5)*5); }
+  if(S&&S.ride) m=Math.max(5,Math.round(m*RIDES[S.ride].time/5)*5);
+  return m;
 }
 
 /* ===== AKCJE ===== */
@@ -286,8 +309,34 @@ function cashIn(){
 function buy(item){
   const l=L[S.at]; if(!isOpen(l,S.t)){log('Zamknięte.','bad');return}
   if(item==='bulka'){ if(S.cash<2)return log('Brakuje na bułkę.','bad'); S.cash-=2; S.hp=Math.min(100,S.hp+20); passTime(5); log('Bułka z pasztetem. Lepiej. +20 sił','good'); }
-  if(item==='torba'){ if(S.cash<4)return log('Brakuje na torbę.','bad'); S.cash-=4; S.cap+=10; S.bought=true; passTime(5); log('Kupujesz mocną torbę. Pojemność +10.','good'); }
+  if(BAGS[item]){ const b=BAGS[item]; if(S.has[item])return;
+    if(S.cash<b.price)return log(`Brakuje na: ${b.n.toLowerCase()}.`,'bad');
+    S.cash-=b.price; S.has[item]=true; recalcCap(); passTime(5);
+    log(`Kupujesz: ${b.n.toLowerCase()}. Pojemność +${b.cap}.`,'good'); }
+  if(RIDES[item]){ const r=RIDES[item], pr=ridePrice(item);
+    if(S.cash<pr)return log(`Brakuje na: ${r.n.toLowerCase()}.`,'bad');
+    S.cash-=pr; S.ride=item; recalcCap(); passTime(10);
+    log(`Kupujesz: ${r.n.toLowerCase()}. Pojemność ${S.cap}.`,'good'); }
   if(item==='piwo'){ if(S.cash<4)return log('Brakuje.','bad'); S.cash-=4; S.hp=Math.min(100,S.hp+35); S.bagG++; passTime(15); log('Piwo na ławce przed sklepem. +35 sił i jedna butelka więcej do zwrotu.','good'); }
+  render();
+}
+function stash(){
+  if(!L[S.at].sleep)return;
+  const room=KIT_CAP-S.kit.p-S.kit.g, n=S.bagP+S.bagG;
+  if(!n)return log('Nie masz co kitrać.','bad');
+  if(room<=0)return log('Kitrunek pełny. Więcej się nie zmieści.','bad');
+  let g=Math.min(S.bagG,room), p=Math.min(S.bagP,room-g);
+  S.bagG-=g; S.bagP-=p; S.kit.g+=g; S.kit.p+=p; saveKit(); passTime(5); if(S.over)return;
+  log(`Chowasz za wiatą: ${p} plastik, ${g} szkło. Czeka do jutra.${S.bagP+S.bagG?' Reszta się nie zmieściła.':''}`,'good');
+  render();
+}
+function unstash(){
+  if(!L[S.at].sleep)return;
+  const room=S.cap-S.bagP-S.bagG, n=S.kit.p+S.kit.g;
+  if(!n)return; if(room<=0)return log('Torba pełna.','bad');
+  let g=Math.min(S.kit.g,room), p=Math.min(S.kit.p,room-g);
+  S.kit.g-=g; S.kit.p-=p; S.bagG+=g; S.bagP+=p; saveKit(); passTime(5); if(S.over)return;
+  log(`Bierzesz z kitrunku: ${p} plastik, ${g} szkło.`,'good');
   render();
 }
 function rest(){
@@ -331,13 +380,16 @@ function log(t,c=''){S.log.unshift({t:`[${fmt(S.t)}] ${t}`,c}); S.log=S.log.slic
 function endGame(){
   S.over=true; S.t=END;
   const left=S.bagP*PLASTIC+S.bagG*GLASS;
+  if(S.kit.p+S.kit.g>0 && Math.random()<KIT_RISK){ S.kit.p=Math.floor(S.kit.p/2); S.kit.g=Math.floor(S.kit.g/2); S.kitLost=true; saveKit(); }
   let best=0; try{best=+localStorage.getItem('menel_best')||0}catch(e){}
   const rec=S.cash>best; if(rec){try{localStorage.setItem('menel_best',S.cash)}catch(e){}}
   document.getElementById('endtitle').textContent= rec?'NOWY REKORD':'PÓŁNOC';
   document.getElementById('endtxt').textContent= S.cash>=70?'Dzień jak z bajki. Starczy na tydzień.':S.cash>=35?'Przeżyłeś. Jutro to samo.':'Marny dzień. Pobiedziska nie były łaskawe.';
   document.getElementById('endcash').textContent=zl(S.cash);
   document.getElementById('endstats').innerHTML=`Oddane: ${S.totalP} plastik, ${S.totalG} szkło · przeszukań: ${S.searches} · w drodze: ${Math.round(S.walked/60*10)/10} h`+
-    (left?`<br>Przepadło w torbie: ${zl(left)}`:'');
+    (left?`<br>Przepadło w torbie: ${zl(left)}`:'')+
+    (S.kit.p+S.kit.g?`<br>W kitrunku na jutro: ${S.kit.p} plastik, ${S.kit.g} szkło (${zl(S.kit.p*PLASTIC+S.kit.g*GLASS)})`:'')+
+    (S.kitLost?'<br>Ktoś znalazł twój kitrunek w nocy i zabrał połowę.':'');
   document.getElementById('end').classList.add('on');
   render();
 }
@@ -401,14 +453,27 @@ function render(){
     a+=`<button class="btn wide" onclick="cashIn()" ${o?'':'disabled'}><b>♻ Oddaj butelki</b><small>${o?'+'+zl(S.bagP*PLASTIC+S.bagG*GLASS):'zamknięte, czynne 6:00–22:00'}</small></button>
         <button class="btn" onclick="buy('bulka')" ${o?'':'disabled'}><b>🥖 Bułka</b><small>2 zł · +20 sił</small></button>
         <button class="btn" onclick="buy('piwo')" ${o?'':'disabled'}><b>🍺 Piwo</b><small>4 zł · +35 sił</small></button>
-        ${S.bought?'':`<button class="btn" onclick="buy('torba')" ${o?'':'disabled'}><b>👜 Mocna torba</b><small>4 zł · +10 miejsca</small></button>`}`;
+        ${Object.keys(BAGS).filter(k=>!S.has[k]).map(k=>`<button class="btn" onclick="buy('${k}')" ${o&&S.cash>=BAGS[k].price?'':'disabled'}><b>${BAGS[k].ic} ${BAGS[k].n}</b><small>${zl(BAGS[k].price)} · +${BAGS[k].cap} miejsca</small></button>`).join('')}
+        ${ridesOffered().map(k=>`<button class="btn" onclick="buy('${k}')" ${o&&S.cash>=ridePrice(k)?'':'disabled'}><b>${RIDES[k].ic} ${RIDES[k].n}</b><small>${zl(ridePrice(k))}${S.ride&&k==='rowerwozek'?' (dopłata)':''} · +${RIDES[k].cap} miejsca · ${RIDES[k].note}</small></button>`).join('')}`;
+  }
+  if(l.sleep){
+    const kn=S.kit.p+S.kit.g;
+    a+=`<button class="btn" onclick="stash()" ${(S.bagP+S.bagG)&&kn<KIT_CAP?'':'disabled'}><b>📦 Przykituj butelki</b><small>5 min · kitrunek ${kn}/${KIT_CAP}</small></button>
+        <button class="btn" onclick="unstash()" ${kn&&S.bagP+S.bagG<S.cap?'':'disabled'}><b>🎒 Weź z kitrunku</b><small>${kn?S.kit.p+' plastik · '+S.kit.g+' szkło':'pusto'}</small></button>`;
   }
   a+=`<button class="btn" onclick="rest()"><b>💤 Odpocznij</b><small>60 min · ${l.sleep?'+30':'+15'} sił</small></button>`;
   if(l.id==='skansen'&&!isOpen(l,S.t)) a+=`<button class="btn wide" disabled><b>Skansen zamknięty</b><small>czynny 8:00–20:00</small></button>`;
   document.getElementById('actions').innerHTML=a;
   const n=S.bagP+S.bagG;
-  document.getElementById('bag').innerHTML=`<div class="row"><span>Reklamówka</span><span>${n}/${S.cap}</span></div>
+  document.getElementById('bag').innerHTML=`<div class="row"><span>${gearLabel()}</span><span>${n}/${S.cap}</span></div>
+    ${L[S.at].sleep&&(S.kit.p+S.kit.g)?`<div class="row" style="color:var(--sodium)"><span>📦 kitrunek</span><span>${S.kit.p} plastik · ${S.kit.g} szkło</span></div>`:''}
     <div class="row"><span class="p">plastik × ${S.bagP}</span><span class="g">szkło × ${S.bagG}</span><span>= ${zl(S.bagP*PLASTIC+S.bagG*GLASS)}</span></div>`;
+}
+function gearLabel(){
+  const p=['Reklamówka'];
+  Object.keys(BAGS).forEach(k=>{if(S.has[k])p.push(BAGS[k].ic+' '+BAGS[k].n.toLowerCase())});
+  if(S.ride)p.push(RIDES[S.ride].ic+' '+RIDES[S.ride].n.toLowerCase());
+  return p.join(' + ');
 }
 function toggleMap(on){
   const m=document.getElementById('map'); m.classList.toggle('on',on); if(!on)return;
