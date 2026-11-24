@@ -6,6 +6,10 @@
 <meta name="theme-color" content="#0b0a0d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Menel">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Menel: Pobiedziska</title>
 <style>
 :root{
@@ -408,5 +412,8 @@ function startGame(){
 }
 S=newState(); render();
 </script>
+<script>if ('serviceWorker' in navigator) {   // PWA: działa offline po pierwszym wejściu
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}</script>
 </body>
 </html>
