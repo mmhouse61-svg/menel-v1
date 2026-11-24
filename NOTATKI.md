@@ -5,10 +5,17 @@ Stan na 24.11.2026.
 ## Linki
 - Repo: https://github.com/mmhouse61-svg/menel-v1 (publiczne)
 - Prywatny podgląd (artefakt Claude): https://claude.ai/artifact/ASws1XGExkBbT2i19uRbNs
-- Cloudflare: w trakcie. Aplikacja Cloudflare na GitHubie widzi tylko repo `mitinspect`; trzeba dodać `menel-v1`
-  (https://github.com/settings/installations/174761365, weryfikacja e-mailem), potem Workers & Pages → Create → Continue with GitHub → menel-v1 → Deploy.
+- Hosting: GitHub Pages (workflow `.github/workflows/pages.yml` publikuje `public/`): https://mmhouse61-svg.github.io/menel-v1/
+- Cloudflare: odrzucone 24.11 (`wrangler.jsonc` zostaje w repo, nieużywany).
+- PWA: `public/manifest.json`, `sw.js` (przy każdej zmianie gry podbij `WERSJA`, teraz v5), ikony.
 
-## Mechanika (v1)
+## Mechanika (stan 24.11, SW v5)
+- Plansza 18×8 pól zamiast mapy: ulica 5 min/⚡0,5, trawnik 10/1, zarośla 15/1,5; woda i budynki nieprzechodnie. Podgląd trasy i kosztu, drugie stuknięcie = idź, strzałki/WASD.
+- Sprzęt w sklepie: mocna torba 4 zł (+10), duży worek 8 zł (+15), wózek 15 zł (+30, czas ×1,25), rower 22 zł (+5, czas i siły ×0,5), rower+wózek 34 zł (+30, ×0,65; dopłata różnicy).
+- Kitrunek na ławce: schowek na 40 butelek, przechodzi na kolejny dzień (localStorage `menel_kit`), 15% szans, że w nocy ktoś zabierze połowę.
+- Układ responsywny na komputer; „obróć telefon” tylko na telefonie.
+
+## Mechanika (v1, pierwotna)
 - Start 7:00 na ławce, koniec 24:00.
 - Plastik 0,50 zł, szkło po piwie 1,00 zł. Reklamówka 15 szt. (mocna torba +10 za 4 zł).
 - Przejście 10–60 min (mapa schematyczna), przeszukanie 20 min, oddanie butelek w sklepie (czynny 6–22).
