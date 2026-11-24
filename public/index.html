@@ -81,7 +81,29 @@ button{font:inherit;color:inherit}
 .ov .big{font-size:34px;color:var(--sodium2)}
 .ov .btn{display:inline-block;text-align:center;margin-top:12px;padding:12px 26px}
 #rotate{z-index:20}
-@media (orientation:portrait){ #rotate{display:flex} }
+/* „Obróć telefon” tylko na telefonie: wąskie okno pionowo. Na komputerze (nawet w wąskim oknie) gra działa zawsze. */
+@media (orientation:portrait) and (max-width:700px) and (pointer:coarse){ #rotate{display:flex} }
+/* Komputer / duży ekran: większe napisy i przyciski, układ wyśrodkowany */
+@media (min-width:900px) and (min-height:560px){
+  #app{max-width:1500px;margin:0 auto;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+  #hud{font-size:17px;padding:10px 18px;gap:22px}
+  #hud .clock{font-size:26px} #hud .day{font-size:14px} .bar{width:110px;height:10px}
+  #main{grid-template-columns:1.5fr 1fr}
+  #locname{left:22px;top:18px;right:22px}
+  #locname h1{font-size:32px} #locname p{font-size:16px;max-width:80%} #tag{font-size:12px}
+  #log{left:18px;right:18px;bottom:16px;font-size:15px;gap:5px} #log div{padding:6px 10px}
+  #actions{gap:10px;padding:14px}
+  .btn{padding:12px 14px;min-height:60px} .btn b{font-size:17px} .btn small{font-size:13px}
+  .btn:hover:not([disabled]){background:#2a2530;border-color:var(--sodium)}
+  #bag{font-size:16px;padding:8px 16px 14px}
+  .node text{font-size:15px} .node text.cost{font-size:13px}
+  #map .hint{font-size:14px} #map .close:hover{border-color:var(--sodium)}
+  .ov .box{max-width:680px} .ov h2{font-size:38px} .ov p{font-size:17px} .ov .big{font-size:44px}
+}
+@media (min-width:1600px) and (min-height:800px){
+  #app{max-width:1800px} #hud{font-size:19px} #locname h1{font-size:38px} #locname p{font-size:18px}
+  .btn b{font-size:19px} .btn small{font-size:14px} #bag{font-size:18px} #log{font-size:17px}
+}
 @media (max-height:360px){ #locname p{font-size:11.5px} .btn{padding:6px 7px;min-height:40px} .btn b{font-size:13px} }
 </style>
 </head>
