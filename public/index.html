@@ -18,6 +18,7 @@
   --blood:#b3402e; --green:#7fae5a; --glass:#6fae8f; --plastic:#7aa6d6;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
   font-family:"Courier New",ui-monospace,Menlo,monospace;overflow:hidden}
 button{font:inherit;color:inherit}
@@ -62,11 +63,11 @@ button{font:inherit;color:inherit}
 #bag .p{color:var(--plastic)} #bag .g{color:var(--glass)}
 /* map */
 #map{position:fixed;inset:0;background:#07060aee;display:none;z-index:5}
-#map.on{display:block}
-#map svg{width:100%;height:calc(100% - 74px);display:block}
-#mapbar{position:absolute;left:0;right:0;bottom:0;min-height:74px;background:#0b0a0d;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:8px 12px;font-size:13px;line-height:1.4}
+#map.on{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+#map svg{width:100%;flex:1;min-height:0;display:block}
+#mapbar{flex:none;background:#0b0a0d;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:5px 12px calc(5px + env(safe-area-inset-bottom));font-size:12px;line-height:1.35}
 #mapinfo{flex:1;min-width:0}
-#mapbar .btn{min-height:44px;padding:8px 16px;text-align:center}
+#mapbar .btn{min-height:36px;padding:6px 14px;text-align:center}
 .tile.ok{cursor:pointer}
 .tc{fill:#aaa396;font-size:12px;text-anchor:middle;font-family:inherit}
 .tc.on{fill:#ffcf7a;font-weight:bold;text-anchor:end;font-size:12px;paint-order:stroke;stroke:#000;stroke-width:2.5px}
@@ -632,7 +633,7 @@ function updateBar(){
   const info=document.getElementById('mapinfo'), go=document.getElementById('mapgo');
   if(!SEL){
     go.style.display='none';
-    info.innerHTML=`Dotknij pola, żeby zobaczyć trasę i koszt sił. Dotknij drugi raz (albo „Idź”), żeby ruszyć.<br><span style="color:var(--dim)">Koszt jednego pola pieszo: ulica ⚡${fE(TERR.R.e*rideT())} · trawnik ⚡${fE(TERR.G.e*rideT())} · zarośla ⚡${fE(TERR.F.e*rideT())}</span>`;
+    info.innerHTML=`Dotknij pole, potem drugi raz, żeby iść. <span style="color:var(--dim)">Pole: ulica ⚡${fE(TERR.R.e*rideT())} · trawnik ⚡${fE(TERR.G.e*rideT())} · zarośla ⚡${fE(TERR.F.e*rideT())}</span>`;
     return;
   }
   const t=Math.round(SEL.t), drain=(SEL.t/5)*(S.t/60>=21?0.5:0.3), total=SEL.e+drain, after=Math.round(S.hp-total);

@@ -7,7 +7,7 @@ Stan na 26.11.2026.
 - Prywatny podgląd (artefakt Claude): https://claude.ai/artifact/ASws1XGExkBbT2i19uRbNs
 - Hosting: GitHub Pages (workflow `.github/workflows/pages.yml` publikuje `public/`): https://mmhouse61-svg.github.io/menel-v1/
 - Cloudflare: odrzucone 24.11 (`wrangler.jsonc` zostaje w repo, nieużywany).
-- PWA: `public/manifest.json`, `sw.js` (przy każdej zmianie gry podbij `WERSJA`, teraz v6), ikony.
+- PWA: `public/manifest.json`, `sw.js` (przy każdej zmianie gry podbij `WERSJA`, teraz v7), ikony.
 
 ## Zmiany 26.11 (SW v6)
 - Balans cen (zastępuje liczby niżej): torba 3 zł, worek 6 zł, wózek 8 zł (czas ×1,15), rower 12 zł, rower+wózek 18 zł (+35, czas ×0,5).

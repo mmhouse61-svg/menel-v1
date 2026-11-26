@@ -6,7 +6,7 @@ Przeglądarkowa gra na telefon (poziomo) o zbieraniu butelek z kaucją w Pobiedz
 
 ## Gdzie jesteśmy
 - Online (GitHub Pages): https://mmhouse61-svg.github.io/menel-v1/, repo mmhouse61-svg/menel-v1 (publiczne). Push do `main` = wdrożenie (~30 s).
-- Kod: jeden `public/index.html` (ok. 600 linii), PWA (`sw.js` WERSJA menel-v6, manifest, ikony). Przy każdej zmianie gry podbij WERSJĘ.
+- Kod: jeden `public/index.html` (ok. 600 linii), PWA (`sw.js` WERSJA menel-v7, manifest, ikony). Przy każdej zmianie gry podbij WERSJĘ.
 - Plansza 18×8 pól, koszt sił i czasu na polu, podgląd trasy, strzałki/WASD. 12 miejsc (10 prawdziwych z Pobiedzisk + Ławka i Sklep wymyślone).
 - Sprzęt w sklepie: torba, worek, wózek, rower, rower+wózek. Kitrunek na ławce (40 szt., przechodzi na następny dzień, 15% ryzyka kradzieży).
 - Układ responsywny na komputer. Testowane tylko w headless Chrome, nie na telefonie.
