@@ -73,7 +73,7 @@ button{font:inherit;color:inherit}
 .tc.on{fill:#ffcf7a;font-weight:bold;text-anchor:end;font-size:12px;paint-order:stroke;stroke:#000;stroke-width:2.5px}
 .pl{font-size:10.5px;font-weight:bold;fill:#e9e2d4;paint-order:stroke;stroke:#000;stroke-width:2.5px;text-anchor:middle;font-family:inherit}
 .hb{background:var(--panel2);border:1px solid var(--line);border-radius:3px;min-width:34px;height:30px;cursor:pointer;color:var(--sodium2);font-weight:bold}
-@media (max-width:760px){ #hud{gap:9px;padding:5px 8px} #hud .day,#hud .rec{display:none} .bar{width:56px} }
+@media (max-width:760px){ #hud{gap:9px;padding:5px 8px} #hud .rec{display:none} .bar{width:56px} }
 /* samouczek */
 #tut{background:#000b}
 .bubble{background:var(--panel);border:2px solid var(--sodium);border-radius:12px;padding:14px 20px;max-width:430px!important}
@@ -117,7 +117,7 @@ button{font:inherit;color:inherit}
 <div id="app">
   <div id="hud">
     <span class="clock" id="clock">07:00</span>
-    <span class="day" id="day">wtorek, listopad</span>
+    <span class="day" id="day"></span>
     <span class="st">💰 <b id="cash">0,00 zł</b></span>
     <span class="st">Siły <span class="bar"><i id="hp"></i></span></span>
     <span class="sp"></span>
@@ -208,7 +208,7 @@ const LOCS = [
   desc:'Łowisko karpiowe, stanowiska wędkarskie. Wędkarze piją od świtu i zostawiają szkło w trzcinach.',
   p:.8, g:3.5, peak:[5,11]},
  {id:'biezdruchowo', name:'Jezioro Biezdruchowo', real:true, x:120,y:90,
-  desc:'Plaża ze żwirem, wypożyczalnia kajaków, wyciąg wakeboardowy. W listopadzie pusto, ale po sezonie zostało sporo szkła.',
+  desc:'Plaża ze żwirem, wypożyczalnia kajaków, wyciąg wakeboardowy. Poza sezonem pusto, ale szkła zawsze trochę zostaje.',
   p:1, g:3, peak:[12,18]},
  {id:'letnisko', name:'Przystanek Pobiedziska Letnisko', real:true, x:90,y:300,
   desc:'Druga stacja w mieście. Cicho, pusto, nikt tu nie sprząta.',
@@ -540,6 +540,7 @@ function cityFor(id,t){
 function render(){
   const l=L[S.at];
   document.getElementById('clock').textContent=fmt(S.t);
+  document.getElementById('day').textContent=new Date().toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long'});
   document.getElementById('cash').textContent=zl(S.cash);
   const hp=Math.max(0,S.hp);
   const hpEl=document.getElementById('hp'); hpEl.style.width=hp+'%'; hpEl.style.background=hp<25?'var(--blood)':hp<50?'var(--sodium)':'var(--green)';
