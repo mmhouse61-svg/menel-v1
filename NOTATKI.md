@@ -1,13 +1,19 @@
 # Menel: Pobiedziska – notatki z projektu
 
-Stan na 24.11.2026.
+Stan na 26.11.2026.
 
 ## Linki
 - Repo: https://github.com/mmhouse61-svg/menel-v1 (publiczne)
 - Prywatny podgląd (artefakt Claude): https://claude.ai/artifact/ASws1XGExkBbT2i19uRbNs
 - Hosting: GitHub Pages (workflow `.github/workflows/pages.yml` publikuje `public/`): https://mmhouse61-svg.github.io/menel-v1/
 - Cloudflare: odrzucone 24.11 (`wrangler.jsonc` zostaje w repo, nieużywany).
-- PWA: `public/manifest.json`, `sw.js` (przy każdej zmianie gry podbij `WERSJA`, teraz v5), ikony.
+- PWA: `public/manifest.json`, `sw.js` (przy każdej zmianie gry podbij `WERSJA`, teraz v6), ikony.
+
+## Zmiany 26.11 (SW v6)
+- Balans cen (zastępuje liczby niżej): torba 3 zł, worek 6 zł, wózek 8 zł (czas ×1,15), rower 12 zł, rower+wózek 18 zł (+35, czas ×0,5).
+- Progi oceny dnia: 95 zł świetny, 60 zł przeżyłeś.
+- Dźwięki syntezowane + wibracja (przycisk 🔊), samouczek 3 dymki (przycisk ?), większe napisy.
+- Bot do balansu: `node narzedzia/bot.js 600`. Średnio: bez sprzętu 70 zł, z różnym sprzętem 80–89 zł.
 
 ## Mechanika (stan 24.11, SW v5)
 - Plansza 18×8 pól zamiast mapy: ulica 5 min/⚡0,5, trawnik 10/1, zarośla 15/1,5; woda i budynki nieprzechodnie. Podgląd trasy i kosztu, drugie stuknięcie = idź, strzałki/WASD.
@@ -33,7 +39,7 @@ Wymyślone: „Ławka pod blokiem” (start), „Sklep z punktem zwrotu” (godz
 
 ## Otwarte pytania
 - Prawdziwe sklepy z Pobiedzisk (nazwy, ulice) – czeka na Marcina.
-- Balans: bot losowy robi 33–72 zł/dzień.
+- Balans: bot w `narzedzia/bot.js`. Bot nie mdleje (je bułki), więc siły sprawdzić graniem.
 - Docelowo PWA / natywna apka.
 
 ## Pliki

@@ -6,11 +6,13 @@ Przeglądarkowa gra na telefon (poziomo) o zbieraniu butelek z kaucją w Pobiedz
 
 ## Gdzie jesteśmy
 - Online (GitHub Pages): https://mmhouse61-svg.github.io/menel-v1/, repo mmhouse61-svg/menel-v1 (publiczne). Push do `main` = wdrożenie (~30 s).
-- Kod: jeden `public/index.html` (ok. 600 linii), PWA (`sw.js` WERSJA menel-v5, manifest, ikony). Przy każdej zmianie gry podbij WERSJĘ.
+- Kod: jeden `public/index.html` (ok. 600 linii), PWA (`sw.js` WERSJA menel-v6, manifest, ikony). Przy każdej zmianie gry podbij WERSJĘ.
 - Plansza 18×8 pól, koszt sił i czasu na polu, podgląd trasy, strzałki/WASD. 12 miejsc (10 prawdziwych z Pobiedzisk + Ławka i Sklep wymyślone).
 - Sprzęt w sklepie: torba, worek, wózek, rower, rower+wózek. Kitrunek na ławce (40 szt., przechodzi na następny dzień, 15% ryzyka kradzieży).
 - Układ responsywny na komputer. Testowane tylko w headless Chrome, nie na telefonie.
 - Notatki o mechanice: [NOTATKI.md](../NOTATKI.md).
+
+- 26.11: zrobiony pakiet A (balans cen botem `narzedzia/bot.js`, dźwięki i wibracja, samouczek, czytelność). Commit lokalny, jeśli nie ma go na origin: push = wdrożenie, po zgodzie Marcina.
 
 ## Następny krok
 1. Zagrać partię na telefonie (poziomo, zainstalowana PWA) i spisać uwagi: czytelność planszy, tempo, czy siły nie schodzą za szybko, czy sprzęt się opłaca.
@@ -29,7 +31,7 @@ Przeglądarkowa gra na telefon (poziomo) o zbieraniu butelek z kaucją w Pobiedz
 - Sprzęt przenoszący się między dniami (dziś znika po dniu).
 - Prawdziwe sklepy z Pobiedzisk jako lokacje.
 - Kradzież roweru, więcej zdarzeń na polach.
-- Bot do balansu (wcześniej robił 33–72 zł/dzień, nie ma go w repo).
+- Z pakietu B: sprzęt na kolejne dni i cel 30-dniowy (po zagraniu na telefonie).
 
 ## Blokery / pytania do użytkownika
 - Strażnik: w sesji doszło sporo funkcji naraz (PWA, sprzęt, kitrunek, plansza) przed pierwszym graniem na telefonie. Kolejne dodatki dopiero po jego uwagach.
