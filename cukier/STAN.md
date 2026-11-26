@@ -12,7 +12,7 @@ Przeglądarkowa gra na telefon (poziomo) o zbieraniu butelek z kaucją w Pobiedz
 - Układ responsywny na komputer. Testowane tylko w headless Chrome, nie na telefonie.
 - Notatki o mechanice: [NOTATKI.md](../NOTATKI.md).
 
-- 26.11: zrobiony pakiet A (balans cen botem `narzedzia/bot.js`, dźwięki i wibracja, samouczek, czytelność). Commit lokalny, jeśli nie ma go na origin: push = wdrożenie, po zgodzie Marcina.
+- 26.11: zrobiony pakiet A (balans cen botem `narzedzia/bot.js`, dźwięki i wibracja, samouczek, czytelność). Opublikowane 26.11 (SW v6).
 
 ## Następny krok
 1. Zagrać partię na telefonie (poziomo, zainstalowana PWA) i spisać uwagi: czytelność planszy, tempo, czy siły nie schodzą za szybko, czy sprzęt się opłaca.
