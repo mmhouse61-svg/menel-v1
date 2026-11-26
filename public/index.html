@@ -566,7 +566,7 @@ function render(){
   }
   if(l.sleep){
     const kn=S.kit.p+S.kit.g;
-    a+=`<button class="btn" onclick="stash()" ${(S.bagP+S.bagG)&&kn<KIT_CAP?'':'disabled'}><b>📦 Przykituj butelki</b><small>5 min · kitrunek ${kn}/${KIT_CAP}</small></button>
+    a+=`<button class="btn" onclick="stash()" ${(S.bagP+S.bagG)&&kn<KIT_CAP?'':'disabled'}><b>📦 Przykitraj butelki</b><small>5 min · kitrunek ${kn}/${KIT_CAP}</small></button>
         <button class="btn" onclick="unstash()" ${kn&&S.bagP+S.bagG<S.cap?'':'disabled'}><b>🎒 Weź z kitrunku</b><small>${kn?S.kit.p+' plastik · '+S.kit.g+' szkło':'pusto'}</small></button>`;
   }
   a+=`<button class="btn" onclick="rest()"><b>💤 Odpocznij</b><small>60 min · ${l.sleep?'+30':'+15'} sił</small></button>`;
