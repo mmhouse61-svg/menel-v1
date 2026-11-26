@@ -28,10 +28,7 @@ Przeglądarkowa gra na telefon (poziomo) o zbieraniu butelek z kaucją w Pobiedz
 - 2026-11-24 — Czas płynie co 5 min (było 10) — plansza ma krótkie kroki.
 
 ## Parking pomysłów
-- Sprzęt przenoszący się między dniami (dziś znika po dniu).
-- Prawdziwe sklepy z Pobiedzisk jako lokacje.
-- Kradzież roweru, więcej zdarzeń na polach.
-- Z pakietu B: sprzęt na kolejne dni i cel 30-dniowy (po zagraniu na telefonie).
+Wszystkie pomysły są w [BACKLOG.md](../BACKLOG.md).
 
 ## Blokery / pytania do użytkownika
 - Strażnik: w sesji doszło sporo funkcji naraz (PWA, sprzęt, kitrunek, plansza) przed pierwszym graniem na telefonie. Kolejne dodatki dopiero po jego uwagach.
